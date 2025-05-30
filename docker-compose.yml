@@ -1,0 +1,56 @@
+services:
+  fastapi:
+    build: .
+    container_name: fastapi-socialmedia
+    ports:
+      - "9000:9000"
+    depends_on:
+      - redis
+      - db
+    environment:
+      # - CELERY_BROKER_URL=redis://redis:6479/0
+      # - CELERY_RESULT_BACKEND=redis://redis:6479/0
+      - DATABASE_URL=postgresql://postgres_tyler:postgres_123!@db:5432/socialmedia_db
+
+  celery_worker:
+    build: .
+    container_name: celery-worker-socialmedia
+    command: celery -A services.tasks.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      # - CELERY_RESULT_BACKEND=redis://redis:6479/0
+      # - DATABASE_URL=postgresql://postgres_tyler:postgres_123!@db:5432/socialmedia_db
+
+  celery_beat:
+    build: .
+    container_name: celery-beat-socialmedia
+    command: celery -A services.tasks.celery_app beat --loglevel=info
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+  #     - CELERY_RESULT_BACKEND=redis://redis:6479/0
+  #     - DATABASE_URL=postgresql://postgres_tyler:postgres_123!@db:5432/socialmedia_db
+
+  redis:
+    image: redis:7
+    container_name: redis-socialmedia
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:15
+    container_name: socialmedia-db
+    environment:
+      POSTGRES_USER: postgres_tyler
+      POSTGRES_PASSWORD: postgres_123!
+      POSTGRES_DB: socialmedia_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
