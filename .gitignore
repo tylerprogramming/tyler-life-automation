@@ -1,0 +1,5 @@
+.env
+skoolvenv/
+__pycache__/
+crawl4ai/
+daily-automation-skool/
