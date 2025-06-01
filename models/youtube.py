@@ -5,6 +5,7 @@ class YouTubeTranscriptionCreate(BaseModel):
     video_id: str
     channel_id: str
     transcription: str
+    segments: list[dict]
     used: bool = False
 
 class YouTubeTranscriptionUpdate(BaseModel):
@@ -12,3 +13,7 @@ class YouTubeTranscriptionUpdate(BaseModel):
     channel_id: Optional[str] = None
     transcription: Optional[str] = None
     used: Optional[bool] = None
+    
+class YouTubeOutput(BaseModel):
+    description: str
+    chapters: list[str]
