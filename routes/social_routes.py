@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Body
 from services import linkedin as linkedin_service
+from services import instagram as instagram_service
 from services import youtube as youtube_service
 from services import database as database_service
+from services import twitter as twitter_service
 import os
 from dotenv import load_dotenv
 from models.youtube import YouTubeTranscriptionUpdate
+from agents_all.linkedin_agents import linkedin_agent_runner
+from agents_all.youtube_agents import youtube_agent_runner
 
 load_dotenv()
 ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
@@ -37,22 +41,52 @@ async def get_latest_youtube_video():
     """
     Endpoint to retrieve the latest YouTube video.
     """
-    youtube_metadata = youtube_service.main()
+    user_input = "tylerreedai"
+    channel_id = youtube_service.get_channel_id(user_input)
+    latest_video = youtube_service.get_latest_videos(channel_id)
+    transcribed_video = youtube_service.process_video(latest_video[0], channel_id)
     
-    print(youtube_metadata)
+    print(transcribed_video)
     
-    database_service.insert_transcription(youtube_metadata)
+    database_service.insert_transcription(transcribed_video)
     
     return {"message": "Transcriptions inserted successfully"}
 
+
+@router.get("/create_youtube_description")
+async def create_youtube_description():
+    """
+    Endpoint to create a YouTube description.
+    """
+    latest_youtube_transcription = database_service.check_latest_transcription()
+    
+    youtube_description_output = await youtube_agent_runner(latest_youtube_transcription.segments)
+    print(youtube_description_output)
+    
+    return youtube_description_output
+
 @router.post("/post_socials")
-async def post_socials(payload: dict = Body(...)):
+async def post_socials():
     """
     Endpoint to post content to social media platforms.
     Fill in the logic to post to your desired platforms.
     """
-    # TODO: Implement posting logic
-    return {"message": "Post to socials received", "payload": payload}
+    latest_youtube_transcription = database_service.check_latest_transcription()
+    print(latest_youtube_transcription)
+    
+    linkedin_service.post_to_linkedin(latest_youtube_transcription)
+    twitter_service.post_to_twitter(latest_youtube_transcription)
+    instagram_service.post_instagram_image(latest_youtube_transcription)
+    
+    youtube_model = YouTubeTranscriptionUpdate(
+        used=True
+    )
+    
+    # instagram_result = instagram_service.post_instagram_image(linkedin_output)
+    
+    updated_record = database_service.update_transcription(latest_youtube_transcription.id, youtube_model)
+    print(updated_record)
+    return {"message": "Post to socials received", "payload": linkedin_output}
 
 @router.get("/latest_youtube_videos")
 async def latest_youtube_videos():
@@ -63,60 +97,3 @@ async def latest_youtube_videos():
     # TODO: Implement YouTube fetching logic
     return {"videos": []} 
 
-@router.get("/linkedin-user-info")
-async def linkedin_user_info():
-    """
-    Endpoint to retrieve the LinkedIn user info.
-    """
-    return {"user_info": linkedin_service.get_user_info(ACCESS_TOKEN)}
-
-@router.get("/linkedin-post-with-image")
-async def linkedin_post_with_image():
-    """
-    Endpoint to post a LinkedIn image post.
-    """
-    IMAGE_PATH = "7 steps build AI Agents crewai flows.png"
-    DOWNLOAD_PATH = "images/linkedin_image.png"
-    
-    user_info = linkedin_service.get_user_info(ACCESS_TOKEN)
-    print("User info:", user_info)
-    
-    person_urn = f"urn:li:person:{user_info['sub']}"
-    
-    # 2. Register image upload
-    upload_url, asset = linkedin_service.register_image_upload(ACCESS_TOKEN, person_urn)
-    print("Register result:", upload_url, asset)
-
-    # 3. Upload image
-    linkedin_service.upload_image_to_linkedin(upload_url, IMAGE_PATH)
-    print("Image uploaded successfully!")
-    
-    # 4. Get image metadata (to get downloadUrl)
-    image_metadata = linkedin_service.get_image_metadata(ACCESS_TOKEN, asset)
-    print("Image metadata:", image_metadata)
-
-    # 5. Download image using downloadUrl from metadata
-    download_url = image_metadata.get("downloadUrl")
-    if download_url:
-        linkedin_service.download_image(download_url, DOWNLOAD_PATH)
-    else:
-        print("No downloadUrl found in image metadata.")
-  
-    commentary = """
-        I'll walk you through how to build a fully automated AI Workout Planner using CrewAI Flows and Composio.dev.
-
-        Here's what we'll build together:
-        🛠️ Step 1: Set up your CrewAI environment with flows
-        🔗 Step 2: Connect Google Drive and Slack using composio.dev
-        💡 Step 3: Define your state management for multi-step tasks
-        📄 Step 4: Automatically generate workout Docs and Sheets
-        🚀 Step 5: Save everything in organized Drive folders
-        📬 Step 6: Send a Slack message with your new workout
-        🧠 Step 7: Make it repeatable and scalable for any routine
-
-        Link to full video: https://youtu.be/NWOoGPKfisg
-    """
-    
-    linkedin_service.post_linkedin_image_post(ACCESS_TOKEN, person_urn, commentary, DOWNLOAD_PATH)
-    
-    return {"message": "LinkedIn post with image received"}
