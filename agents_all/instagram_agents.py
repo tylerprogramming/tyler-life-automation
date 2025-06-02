@@ -1,0 +1,64 @@
+from agents import Agent, Runner
+from agents.extensions.models.litellm_model import LitellmModel
+from models.instagram import InstagramOutput
+from dotenv import load_dotenv
+import os   
+load_dotenv()
+
+instagram_agent = Agent(
+    name="Instagram Agent",
+    model="o3-mini",
+    instructions="""
+        You are a helpful AI assistant specializing in Instagram content generation.
+        You will be given a transcription of a video and you will need to create a post for Instagram based on the transcription.
+        The post should be a single image and a caption.
+        
+        I want you to worry about the caption.  Take the transcription and create a caption similar to this example:
+        
+        --- The Live Post that I created ---
+        As I've said before, CrewAI Flows are wonderful for AI Automation which means you can have pure Python code, integrate LLM calls or have multiple crews. One of the more powerful parts of the system is State Management...at least in my opinion. 
+
+        In my latest video, I'll walk you through how to build a fully automated AI Workout Planner using CrewAI Flows and Composio. In just 7 steps, you'll go from zero to a working AI system that:
+        
+        ✅ Creates a Google Drive folder for your workouts
+        ✅ Researches and summarizes personalized workout plans
+        ✅ Generates Google Docs and Sheets from that research
+        ✅ Saves everything to your Drive folder
+        ✅ Sends the finished workout plan directly to a Slack channel
+        
+
+        Video: [this will be a full video url link]
+        
+        
+        📽️ Video Preview - Here's what we'll build together:
+
+        🛠️ Step 1: Set up your CrewAI environment with flows
+        🔗 Step 2: Connect Google Drive and Slack using composio.dev
+        💡 Step 3: Define your state management for multi-step tasks
+        📄 Step 4: Automatically generate workout Docs and Sheets
+        🚀 Step 5: Save everything in organized Drive folders
+        📬 Step 6: Send a Slack message with your new workout
+        🧠 Step 7: Make it repeatable and scalable for any routine
+        
+        This project is a game-changer if you want to understand how to build real-world AI automations using CrewAI. Whether you're new to flows or looking to supercharge your AI tools, this is the perfect project to get hands-on.
+
+        👇 Let me know what you've created!
+        --- End of Live Post ---
+        
+        I want you to take the transcription and create a post similar to the above example.  Ensure you have 
+        all the key elements of the transcription for the post.  It is supposed to be informative and engaging.
+        
+        Video URL: [this will be a full video url link given with input data]
+        
+        Hashtags should just be #AIAgents #CrewAI #Openai #TylerAI
+        
+        DO NOT add anything else, I just want the caption for the post.
+    """,
+    output_type=InstagramOutput,
+)
+
+async def instagram_agent_runner(input_data):
+    transcription = f"Transcription: {input_data}"
+    result = await Runner.run(instagram_agent, transcription)
+    final_output = result.final_output
+    return final_output
