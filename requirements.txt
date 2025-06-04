@@ -1,0 +1,14 @@
+sqlalchemy
+psycopg2-binary
+python-dotenv
+openai
+yt-dlp
+google-api-python-client
+requests
+celery
+redis
+uvicorn
+fastapi
+openai-agents
+openai-agents[litellm]
+tweepy
