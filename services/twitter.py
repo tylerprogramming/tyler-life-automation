@@ -4,7 +4,7 @@ from services import database as database_service
 from dotenv import load_dotenv
 from models.twitter import TwitterPostCreate, TwitterPostUpdate
 from agents_all.twitter import twitter_agent_runner
-from models.youtube import YouTubeTranscription
+from models.youtube import YouTubeTranscriptionCreate
 
 load_dotenv()
 
@@ -17,7 +17,7 @@ async def twitter_service(input_data: str):
     agent_output = await twitter_agent_runner(input_data)
     return agent_output
 
-async def post_to_twitter(youtube_record: YouTubeTranscription):
+async def post_to_twitter(youtube_record: YouTubeTranscriptionCreate):
     client = tweepy.Client(
         consumer_key=API_KEY, consumer_secret=API_SECRET,
         access_token=ACCESS_TOKEN, access_token_secret=ACCESS_SECRET

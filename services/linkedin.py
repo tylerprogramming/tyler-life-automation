@@ -2,7 +2,7 @@ import requests
 import os   
 from dotenv import load_dotenv
 from agents_all.linkedin_agents import linkedin_agent_runner
-from models.youtube import YouTubeTranscription
+from models.youtube import YouTubeTranscriptionCreate
 
 load_dotenv()
 
@@ -11,7 +11,7 @@ ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
 IMAGE_PATH = "7 steps build AI Agents crewai flows.png"
 DOWNLOAD_PATH = "images/linkedin_image.png"
 
-def post_to_linkedin(youtube_record: YouTubeTranscription):
+def post_to_linkedin(youtube_record: YouTubeTranscriptionCreate):
     print(youtube_record)
     
     user_info = get_user_info(ACCESS_TOKEN)

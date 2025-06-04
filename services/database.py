@@ -70,6 +70,20 @@ def check_latest_transcription():
         return session.query(YouTubeTranscription).filter_by(used=False).order_by(YouTubeTranscription.created_at.desc()).first()
     finally:
         session.close()
+        
+def save_youtube_description(youtube_transcription_id: int, video_id: str, description: str, chapters: list[str]):
+    session = SessionLocal()
+    
+    try:
+        youtube_description = YouTubeDescription(
+            youtube_transcription_id=youtube_transcription_id,
+            video_id=video_id,
+            description=description,
+            chapters=chapters)
+        session.add(youtube_description)
+        session.commit()
+    finally:
+        session.close()
 
 def save_instagram_post(youtube_transcription_id: int, caption: str, image_url: str):
     session = SessionLocal()

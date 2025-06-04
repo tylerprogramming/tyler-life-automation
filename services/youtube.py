@@ -6,6 +6,8 @@ from openai import OpenAI
 import yt_dlp
 from models.youtube import YouTubeTranscriptionCreate
 import json 
+from services import database as database_service
+from agents_all import youtube_agents
 
 load_dotenv()
 
@@ -127,8 +129,22 @@ def get_channel_id(username_or_url):
 def process_video(video, channel_id):
     transcribed_video = transcribe_video(video['video_id'])
     transcribed_video.channel_id = channel_id
-
+    
     return transcribed_video
+
+async def process_video_description(latest_youtube_transcription):
+    youtube_description_output = await youtube_agents.youtube_agent_runner(latest_youtube_transcription.segments)
+    
+    print(youtube_description_output)
+    
+    database_service.save_youtube_description(
+        latest_youtube_transcription.id,
+        latest_youtube_transcription.video_id,
+        youtube_description_output.description,
+        youtube_description_output.chapters
+    )
+    
+    return youtube_description_output
 
 # Main function to process videos
 def main():
