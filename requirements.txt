@@ -12,3 +12,4 @@ fastapi
 openai-agents
 openai-agents[litellm]
 tweepy
+Pillow
