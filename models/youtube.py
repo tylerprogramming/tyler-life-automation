@@ -3,7 +3,7 @@ from typing import Optional
 
 class YouTubeTranscriptionCreate(BaseModel):
     video_id: str
-    channel_id: str
+    channel_id: Optional[str] = None
     transcription: str
     segments: list[dict]
     used: bool = False
