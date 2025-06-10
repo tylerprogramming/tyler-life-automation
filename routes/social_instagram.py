@@ -25,24 +25,6 @@ async def poll_container_status_route(container_id: str):
 async def refresh_instagram_access_token_route():
     return instagram_service.refresh_instagram_access_token()
 
-@router.get("/get_instagram_user_info")
-async def get_instagram_user_info_route():
-    import requests
-
-    url = "https://graph.facebook.com/oauth/access_token"
-    params = {
-        "client_id": "17841465181324267",
-        "client_secret": "e5dc7952ea948ff3210665f6e46a1cdd",
-        "grant_type": "client_credentials"
-    }
-
-    response = requests.get(url, params=params)
-    print(response.json())
-    
-    return response.json()
-
-# --- New Instagram Post APIs ---
-
 @router.get("/instagram_posts")
 def get_all_instagram_posts():
     posts = instagram_service.get_all_instagram_posts()
