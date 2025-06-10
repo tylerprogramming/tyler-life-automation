@@ -6,8 +6,20 @@ import requests
 router = APIRouter()
 
 @router.post("/post_instagram_image")
-async def post_instagram_image_route(image_url: str):
-    return await instagram_service.post_instagram_image(image_url)
+async def post_instagram_image_route(image_urls: list[str]):
+    return await instagram_service.post_instagram_image(image_urls)
+
+@router.post("/post_instagram_reels")
+async def post_instagram_reels_route(video_url: str):
+    return await instagram_service.create_reels_container(video_url)
+
+@router.post("/publish_instagram_container")
+async def publish_instagram_container_route(container_id: str):
+    return await instagram_service.publish_media_to_instagram(container_id)
+
+@router.post("/poll_container_status")
+async def poll_container_status_route(container_id: str):
+    return await instagram_service.poll_until_ready(container_id)
 
 @router.get("/refresh_instagram_access_token")
 async def refresh_instagram_access_token_route():
