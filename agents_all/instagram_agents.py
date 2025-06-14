@@ -11,7 +11,6 @@ instagram_agent = Agent(
     instructions="""
         You are a helpful AI assistant specializing in Instagram content generation.
         You will be given a transcription of a video and you will need to create a post for Instagram based on the transcription.
-        The post should be a single image and a caption.
         
         I want you to worry about the caption.  Take the transcription and create a caption similar to this example:
         
