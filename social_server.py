@@ -6,6 +6,7 @@ from routes.social_routes import router as social_router
 from routes.social_instagram import router as social_instagram_router
 from routes.social_twitter import router as social_twitter_router
 from routes.social_linkedin import router as social_linkedin_router
+from routes.social_youtube import router as social_youtube_router
 
 from psycopg2 import OperationalError
 
@@ -23,10 +24,11 @@ app.add_middleware(
 )
 
 # Include the social routes
-app.include_router(social_router)
-app.include_router(social_instagram_router)
-app.include_router(social_twitter_router)
-app.include_router(social_linkedin_router)
+app.include_router(social_router, tags=["Socials"])
+app.include_router(social_instagram_router, prefix="/instagram", tags=["Instagram"])
+app.include_router(social_twitter_router, prefix="/twitter", tags=["Twitter"])
+app.include_router(social_linkedin_router, prefix="/linkedin", tags=["LinkedIn"])
+app.include_router(social_youtube_router, prefix="/youtube", tags=["YouTube"])
 
 MAX_RETRIES = 10
 for i in range(MAX_RETRIES):
