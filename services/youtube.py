@@ -8,6 +8,7 @@ from models.youtube import YouTubeTranscriptionCreate
 import json 
 from services import database as database_service
 from agents_all import youtube_agents
+from moviepy import VideoFileClip
 
 load_dotenv()
 
@@ -109,6 +110,44 @@ def transcribe_video(video_id):
     
 
     # return processed_text
+    
+# Function to transcribe and process video
+def transcribe_local_video(video_filename):
+    file_path = f"/app/videos/{video_filename}"
+    # Load your MP4 file
+    video = VideoFileClip(file_path)
+
+    # Extract and write the audio to MP3
+    video.audio.write_audiofile("temp_audio.mp3")
+    
+    # Use OpenAI to process the transcription
+    with open("temp_audio.mp3", "rb") as audio_file:
+        transcription = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
+            response_format="verbose_json",
+            timestamp_granularities=["segment"]
+        )
+        
+    print(transcription)
+    
+    segment_data = [
+        {"start": s.start, "end": s.end, "text": s.text}
+        for s in transcription.segments
+    ]
+    
+    print(segment_data)
+    
+    # Clean up temporary files
+    os.remove("temp_audio.mp3")
+
+    return YouTubeTranscriptionCreate(
+        video_id=video_filename,
+        channel_id='',
+        transcription=transcription.text,
+        segments=segment_data,
+        used=False
+    )
 
 def get_channel_id(username_or_url):
     """Retrieve the channel ID from a username or URL."""
