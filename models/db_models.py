@@ -126,4 +126,58 @@ class InstagramUser(Base):
         Index('idx_instagram_users_instagram_id', 'instagram_user_id'),
         Index('idx_instagram_users_username', 'username'),
         Index('idx_instagram_users_active', 'is_active'),
+    )
+
+class SkoolEvent(Base):
+    __tablename__ = "skool_events"
+    id = Column(Integer, primary_key=True, index=True)
+    event_uuid = Column(String, default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
+    
+    # Skool API fields
+    group_id = Column(String, nullable=False)  # Skool group ID
+    start_time = Column(DateTime, nullable=False)  # Event start time (ISO format with timezone)
+    end_time = Column(DateTime, nullable=False)  # Event end time (ISO format with timezone)
+    
+    # Event metadata
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    timezone = Column(String, nullable=False, default="America/New_York")
+    reminder_disabled = Column(Boolean, default=False)
+    cover_image = Column(String, nullable=True)  # URL to cover image
+    
+    # Location information (stored as JSON)
+    location = Column(JSON, nullable=True)  # {"location_type": 1, "location_info": "zoom_url"}
+    
+    # Privacy settings (stored as JSON)
+    privacy = Column(JSON, nullable=True)  # {"privacy_type": 0}
+    
+    # Status tracking
+    status = Column(String, default='draft', nullable=False)  # draft, scheduled, posted, failed
+    skool_event_id = Column(String, nullable=True)  # ID returned from Skool API after posting
+    
+    # API response data
+    api_response = Column(JSON, nullable=True)  # Store full API response for debugging
+    error_message = Column(Text, nullable=True)  # Store any error messages
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    posted_at = Column(DateTime, nullable=True)  # When the event was successfully posted to Skool
+    
+    # Recurring event support
+    is_recurring = Column(Boolean, default=False)
+    recurrence_pattern = Column(JSON, nullable=True)  # Store recurrence rules if needed
+    parent_event_id = Column(Integer, ForeignKey('skool_events.id'), nullable=True)  # For recurring events
+    
+    # Additional metadata
+    notes = Column(Text, nullable=True)  # Internal notes
+    tags = Column(JSON, nullable=True)  # Array of tags for categorization
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_skool_events_group_id', 'group_id'),
+        Index('idx_skool_events_start_time', 'start_time'),
+        Index('idx_skool_events_status', 'status'),
+        Index('idx_skool_events_created_at', 'created_at'),
+        Index('idx_skool_events_uuid', 'event_uuid'),
     ) 

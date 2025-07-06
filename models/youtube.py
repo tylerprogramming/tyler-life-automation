@@ -17,3 +17,13 @@ class YouTubeTranscriptionUpdate(BaseModel):
 class YouTubeOutput(BaseModel):
     description: str
     chapters: list[str]
+
+class YouTubeDescriptionCreate(BaseModel):
+    youtube_transcription_id: int
+    video_id: str
+    description: str
+    chapters: list[str]
+
+class YouTubeDescriptionUpdate(BaseModel):
+    description: Optional[str] = None
+    chapters: Optional[list[str]] = None

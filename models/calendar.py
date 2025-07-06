@@ -14,6 +14,7 @@ class Platform(str, Enum):
     X = "x"
     INSTAGRAM = "instagram"
     LINKEDIN = "linkedin"
+    GOOGLE_CALENDAR = "google_calendar"
 
 class CalendarEventBase(BaseModel):
     content_id: int
