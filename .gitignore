@@ -5,3 +5,8 @@ crawl4ai/
 daily-automation-skool/
 .DS_Store
 _testing/
+test*
+reset*
+clear*
+credentials.json
+credentials/
