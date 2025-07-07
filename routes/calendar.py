@@ -203,3 +203,33 @@ async def ai_schedule_content(request: AIScheduleRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI scheduling failed: {str(e)}"
         )
+        
+from pydantic import BaseModel
+
+class CreateEventsRequest(BaseModel):
+    text: str
+
+@router.post("/create-events-from-text")
+async def create_events_from_text(
+    request: CreateEventsRequest
+):
+    """
+    Endpoint to create events from text.
+    
+    Request Body (JSON):
+    {
+        "text": "Your text to create events from"
+    }
+    """
+    try:
+        events = await calendar_service.create_events_from_text(request.text)
+        return {
+            "message": f"Successfully created {len(events)} events",
+            "events": events,
+            "total_events": len(events)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create events from text: {str(e)}"
+        )
