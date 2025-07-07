@@ -1,10 +1,17 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, ForeignKey, Date, Time, Index
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, ForeignKey, Date, Time, Index, Float, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import uuid
+import enum
 
 Base = declarative_base()
+
+# Enum for sentiment classification
+class SentimentType(enum.Enum):
+    NEGATIVE = "negative"
+    NEUTRAL = "neutral"
+    POSITIVE = "positive"
 
 class PlatformContent(Base):
     __tablename__ = "platform_content"
@@ -180,4 +187,95 @@ class SkoolEvent(Base):
         Index('idx_skool_events_status', 'status'),
         Index('idx_skool_events_created_at', 'created_at'),
         Index('idx_skool_events_uuid', 'event_uuid'),
+    )
+
+class SavedYouTubeChannel(Base):
+    __tablename__ = "saved_youtube_channels"
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Channel identification
+    channel_url = Column(String, nullable=False, unique=True, index=True)  # Original URL provided
+    channel_id = Column(String, nullable=False, index=True)  # Extracted YouTube channel ID
+    channel_name = Column(String, nullable=True)  # Channel display name
+    
+    # Channel metadata
+    subscriber_count = Column(Integer, nullable=True)  # Subscriber count when last fetched
+    description = Column(Text, nullable=True)  # Channel description
+    thumbnail_url = Column(String, nullable=True)  # Channel thumbnail/avatar
+    
+    # Settings
+    is_active = Column(Boolean, default=True, nullable=False)  # Whether to include in analysis
+    priority = Column(Integer, default=1, nullable=False)  # Priority for analysis (1=high, 5=low)
+    tags = Column(JSON, nullable=True)  # User-defined tags for organization
+    notes = Column(Text, nullable=True)  # User notes about this channel
+    
+    # Analysis settings
+    max_videos_override = Column(Integer, nullable=True)  # Override default max videos for this channel
+    days_back_override = Column(Integer, nullable=True)  # Override default days back for this channel
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_analyzed_at = Column(DateTime, nullable=True)  # When this channel was last included in analysis
+    last_fetched_at = Column(DateTime, nullable=True)  # When channel metadata was last updated
+    
+    # Performance tracking
+    total_videos_found = Column(Integer, default=0, nullable=False)  # Total videos found in all analyses
+    last_video_count = Column(Integer, nullable=True)  # Videos found in most recent analysis
+    avg_videos_per_analysis = Column(Float, nullable=True)  # Average videos per analysis
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_saved_channels_channel_id', 'channel_id'),
+        Index('idx_saved_channels_active', 'is_active'),
+        Index('idx_saved_channels_priority', 'priority'),
+        Index('idx_saved_channels_created_at', 'created_at'),
+        Index('idx_saved_channels_last_analyzed', 'last_analyzed_at'),
+    )
+
+class CommentSentimentAnalysis(Base):
+    __tablename__ = "comment_sentiment_analysis"
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Video identification
+    video_id = Column(String, nullable=False, unique=True, index=True)  # YouTube video ID
+    video_title = Column(String, nullable=True)  # Store video title for reference
+    
+    # Overall sentiment classification
+    overall_sentiment = Column(Enum(SentimentType), nullable=False)
+    sentiment_score = Column(Float, nullable=False)  # Score from -1 (negative) to 1 (positive)
+    confidence_score = Column(Float, nullable=True)  # AI confidence in the analysis (0-1)
+    
+    # Sentiment breakdown
+    positive_count = Column(Integer, default=0, nullable=False)
+    negative_count = Column(Integer, default=0, nullable=False)
+    neutral_count = Column(Integer, default=0, nullable=False)
+    total_comments_analyzed = Column(Integer, nullable=False)
+    
+    # AI-generated insights
+    key_action_items = Column(JSON, nullable=True)  # Array of actionable insights from comments
+    suggestions = Column(JSON, nullable=True)  # Array of suggestions for improvement
+    main_themes = Column(JSON, nullable=True)  # Array of main themes/topics in comments
+    ai_analysis = Column(Text, nullable=True)  # Full AI analysis text
+    
+    # Comment samples for reference
+    top_positive_comments = Column(JSON, nullable=True)  # Sample of most positive comments
+    top_negative_comments = Column(JSON, nullable=True)  # Sample of most negative comments
+    most_liked_comments = Column(JSON, nullable=True)  # Comments with highest like counts
+    
+    # Analysis metadata
+    analysis_model = Column(String, nullable=True)  # Which AI model was used (gemini, openai, etc.)
+    analysis_version = Column(String, nullable=True, default="1.0")  # Version of analysis algorithm
+    processing_time_seconds = Column(Float, nullable=True)  # How long analysis took
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_sentiment_video_id', 'video_id'),
+        Index('idx_sentiment_overall', 'overall_sentiment'),
+        Index('idx_sentiment_score', 'sentiment_score'),
+        Index('idx_sentiment_created_at', 'created_at'),
     ) 
