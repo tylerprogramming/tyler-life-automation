@@ -1,27 +1,36 @@
 services:
+  # Your existing FastAPI service
   fastapi:
     build: .
     container_name: fastapi-socialmedia
     ports:
       - "9000:9000"
+    volumes:
+      - /Volumes/TylerYouTube/exported_final_videos:/app/videos
+      - ./google-credentials.json:/app/google-credentials.json
     depends_on:
       - redis
       - db
     environment:
-      # - CELERY_BROKER_URL=redis://redis:6479/0
-      # - CELERY_RESULT_BACKEND=redis://redis:6479/0
-      - DATABASE_URL=postgresql://postgres_tyler:postgres_123!@db:5432/socialmedia_db
+      - DATABASE_URL=${DATABASE_URL}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/google-credentials.json
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - social-network
 
   celery_worker:
     build: .
     container_name: celery-worker-socialmedia
-    command: celery -A services.tasks.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A services.tasks.celery_app worker --loglevel=info --concurrency=2
     depends_on:
       - redis
+      - db
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      # - CELERY_RESULT_BACKEND=redis://redis:6479/0
-      # - DATABASE_URL=postgresql://postgres_tyler:postgres_123!@db:5432/socialmedia_db
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - social-network
 
   celery_beat:
     build: .
@@ -29,16 +38,21 @@ services:
     command: celery -A services.tasks.celery_app beat --loglevel=info
     depends_on:
       - redis
+      - db
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-  #     - CELERY_RESULT_BACKEND=redis://redis:6479/0
-  #     - DATABASE_URL=postgresql://postgres_tyler:postgres_123!@db:5432/socialmedia_db
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - social-network
 
   redis:
     image: redis:7
     container_name: redis-socialmedia
     ports:
       - "6379:6379"
+    networks:
+      - social-network
 
   db:
     image: postgres:15
@@ -51,6 +65,25 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - social-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok-socialmedia
+    command: http --domain=choice-entirely-coyote.ngrok-free.app fastapi:9000 --log=stdout
+    ports:
+      - "4040:4040"
+    depends_on:
+      - fastapi
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    networks:
+      - social-network
+
+networks:
+  social-network:
+    driver: bridge
 
 volumes:
   pgdata:
