@@ -26,7 +26,10 @@ celery_app.conf.beat_schedule = {
 @celery_app.task(name='send_telegram_message')
 def send_telegram_message():
     try:
-        events = calendar_service.get_events_by_date_range(start_date=datetime.datetime.now(), end_date=datetime.datetime.now() + datetime.timedelta(days=1))
+        today = datetime.date.today()
+        start_date = datetime.datetime.combine(today, datetime.time.min)
+        end_date = datetime.datetime.combine(today, datetime.time.max)
+        events = calendar_service.get_events_by_date_range(start_date=start_date, end_date=end_date)
         
         message = ""
         for event in events:

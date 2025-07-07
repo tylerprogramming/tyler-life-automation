@@ -1,7 +1,7 @@
 import requests
 import os
 import time
-from agents_all.instagram_agents import instagram_agent_runner
+from ai_agents.instagram import instagram_agent_runner
 from services import database as database_service
 from dotenv import load_dotenv
 from models.youtube import YouTubeTranscriptionCreate 
@@ -25,6 +25,73 @@ def refresh_instagram_access_token():
     response = requests.get(url)
     return response.json()
 
+async def handle_oauth_callback(code: str, state: str = None):
+    """
+    Handles the Instagram OAuth callback by exchanging the authorization code for an access token.
+    
+    :param code: Authorization code received from Instagram
+    :param state: State parameter for CSRF protection (optional)
+    :return: Dictionary containing access token and user information
+    """
+    try:
+        # Step 1: Exchange authorization code for short-lived access token
+        token_url = "https://api.instagram.com/oauth/access_token"
+        
+        token_payload = {
+            "client_id": INSTAGRAM_CLIENT_ID,
+            "client_secret": INSTAGRAM_CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "redirect_uri": f"{HOST_URL}/instagram/callback",  # Must match the redirect URI in your app
+            "code": code
+        }
+        
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        
+        # Get short-lived token
+        token_response = requests.post(token_url, data=token_payload, headers=headers)
+        token_data = token_response.json()
+        
+        if token_response.status_code != 200:
+            raise Exception(f"Failed to get access token: {token_data}")
+        
+        short_lived_token = token_data.get("access_token")
+        user_id = token_data.get("user_id")
+        
+        # Step 2: Exchange short-lived token for long-lived token
+        long_lived_url = f"https://graph.instagram.com/access_token"
+        long_lived_params = {
+            "grant_type": "ig_exchange_token",
+            "client_secret": INSTAGRAM_CLIENT_SECRET,
+            "access_token": short_lived_token
+        }
+        
+        long_lived_response = requests.get(long_lived_url, params=long_lived_params)
+        long_lived_data = long_lived_response.json()
+        
+        if long_lived_response.status_code != 200:
+            raise Exception(f"Failed to get long-lived token: {long_lived_data}")
+        
+        long_lived_token = long_lived_data.get("access_token")
+        expires_in = long_lived_data.get("expires_in")
+        
+        # TODO: Save the long-lived token to your database or environment
+        # For now, we'll just return the information
+        print(f"Long-lived access token received: {long_lived_token}")
+        print(f"Token expires in: {expires_in} seconds")
+        
+        return {
+            "access_token": long_lived_token,
+            "user_id": user_id,
+            "expires_in": expires_in,
+            "token_type": "long_lived",
+            "state": state
+        }
+        
+    except Exception as e:
+        print(f"OAuth callback error: {str(e)}")
+        raise e
 
 async def post_instagram_image(image_urls: list[str] = None):
     """

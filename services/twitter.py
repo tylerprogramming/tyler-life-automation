@@ -6,7 +6,7 @@ from PIL import Image
 from services import database as database_service
 from dotenv import load_dotenv
 from models.twitter import TwitterPostCreate, TwitterPostUpdate
-from agents_all.twitter import twitter_agent_runner
+from ai_agents.x import twitter_agent_runner
 from models.youtube import YouTubeTranscriptionCreate
 
 load_dotenv()

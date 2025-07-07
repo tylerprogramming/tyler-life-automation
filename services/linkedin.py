@@ -1,7 +1,7 @@
 import requests
 import os   
 from dotenv import load_dotenv
-from agents_all.linkedin_agents import linkedin_agent_runner
+from ai_agents.linkedin import linkedin_agent_runner
 from models.youtube import YouTubeTranscriptionCreate
 
 load_dotenv()
