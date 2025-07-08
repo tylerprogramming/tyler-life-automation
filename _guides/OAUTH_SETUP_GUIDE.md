@@ -2,14 +2,6 @@
 
 This guide will help you fix the `401 authorization required` error when using the `mine` parameter in YouTube API calls.
 
-## 🚨 **Error You're Seeing**
-
-```json
-{
-  "detail": "Error getting latest videos: <HttpError 401 when requesting https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true&key=AIzaSyB1Wldp7UVDCKmAA8HO7Wc3f5NHnBG9ASk&alt=json returned \"The request uses the <code>mine</code> parameter but is not properly authorized.\""
-}
-```
-
 **The Problem:** The API is using an API key instead of OAuth authentication. The `mine=True` parameter requires OAuth, not just an API key.
 
 ## 🔧 **Solution Steps**
