@@ -11,3 +11,5 @@ clear*
 credentials.json
 credentials/
 youtube_credentials/
+fix_encryption_key.py
+generate_encryption_key.py
