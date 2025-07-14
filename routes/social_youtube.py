@@ -1,78 +1,21 @@
 from fastapi import APIRouter, HTTPException, Query
-from services import youtube as youtube_service
+from services import youtube_analytics, youtube_comments, youtube_transcription
 from services import database as database_service
-from models.youtube import YouTubeTranscriptionUpdate, YouTubeDescriptionCreate, YouTubeOutput, YouTubeDescriptionUpdate
+from models.youtube import (
+    YouTubeTranscriptionUpdate, YouTubeDescriptionCreate, YouTubeOutput, YouTubeDescriptionUpdate,
+    CommentCreate, CommentPin, CommentCreateAndPin, MultiChannelRequest, ReplyInfo, 
+    CommentInfo, VideoInfo, VideosResponse, SavedChannelRequest
+)
 from ai_agents.youtube import youtube_agent_runner
 import os
 from dotenv import load_dotenv
-from pydantic import BaseModel
 from typing import Optional, List
 
 load_dotenv()
 
 router = APIRouter()
 
-# Pydantic models for request bodies
-class CommentCreate(BaseModel):
-    video_id: str
-    comment_text: str
-
-class CommentPin(BaseModel):
-    comment_id: str
-
-class CommentCreateAndPin(BaseModel):
-    video_id: str
-    comment_text: str
-
-class MultiChannelRequest(BaseModel):
-    channel_urls: Optional[List[str]] = None  # Now optional - will use saved channels if None
-    days_back: int = 14
-    max_videos_per_channel: int = 50
-    save_channels: bool = True  # Whether to save channels to database
-    use_saved_channels: bool = True  # Whether to use saved channels if no URLs provided
-
-class ReplyInfo(BaseModel):
-    reply_id: str
-    text: str
-    author: str
-    like_count: int
-    published_at: str
-    parent_id: str
-
-class CommentInfo(BaseModel):
-    comment_id: str
-    text: str
-    author: str
-    like_count: int
-    published_at: str
-    can_reply: bool
-    replies: list[ReplyInfo] = []
-    reply_count: int = 0
-
-class VideoInfo(BaseModel):
-    video_id: str
-    title: str
-    description: str
-    published_at: str
-    thumbnail: str
-    channel_id: str
-    channel_title: str
-    duration: str
-    view_count: int
-    like_count: int
-    comment_count: int
-    tags: list
-    category_id: str
-    video_url: str
-    comments: list[CommentInfo] = []
-    comments_retrieved: int = 0
-    comments_error: Optional[str] = None
-
-class VideosResponse(BaseModel):
-    videos: list[VideoInfo]
-    count: int
-    message: str
-    include_comments: bool = False
+# All Pydantic models are now imported from models.youtube
 
 @router.get("/get_all_transcriptions")
 async def get_all_transcriptions():
@@ -101,11 +44,9 @@ async def get_latest_youtube_video():
     Endpoint to retrieve the latest YouTube video.
     """
     user_input = "tylerreedai"
-    channel_id = youtube_service.get_channel_id(user_input)
-    latest_video = youtube_service.get_latest_videos(channel_id)
-    transcribed_video = youtube_service.process_video(latest_video[0], channel_id)
-    
-    print(transcribed_video)
+    channel_id = youtube_analytics.get_channel_id(user_input)
+    latest_video = youtube_analytics.get_latest_videos(channel_id)
+    transcribed_video = youtube_transcription.process_video(latest_video[0], channel_id)
     
     database_service.insert_transcription(transcribed_video)
     
@@ -116,10 +57,7 @@ async def transcribe_local_video(video_path: str):
     """
     Endpoint to retrieve the latest YouTube video.
     """
-    print(video_path)
-    transcribed_video = youtube_service.transcribe_local_video(video_path)
-    
-    print(transcribed_video)
+    transcribed_video = youtube_transcription.transcribe_local_video(video_path)
     
     database_service.insert_transcription(transcribed_video)
     
@@ -191,7 +129,7 @@ async def latest_youtube_videos(
     Optionally includes comments and sentiment analysis for each video.
     """
     try:
-        videos = youtube_service.get_my_channel_videos(max_results, include_comments, comment_limit)
+        videos = youtube_comments.get_my_channel_videos(max_results, include_comments, comment_limit)
         
         # Add sentiment summaries if requested
         if include_sentiment and videos:
@@ -233,7 +171,7 @@ async def latest_youtube_videos_by_channel(
     Optionally excludes Shorts and includes comments and sentiment analysis for each video.
     """
     try:
-        videos = youtube_service.get_latest_videos_detailed(
+        videos = youtube_comments.get_latest_videos_detailed(
             channel_id, 
             max_results, 
             exclude_shorts=exclude_shorts,
@@ -288,7 +226,7 @@ async def get_video_comments(video_id: str, max_results: int = 100):
     Endpoint to get comments from a YouTube video.
     """
     try:
-        comments = youtube_service.get_video_comments(video_id, max_results)
+        comments = youtube_comments.get_video_comments(video_id, max_results)
         return {"video_id": video_id, "comments": comments}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting comments: {str(e)}")
@@ -299,7 +237,7 @@ async def create_comment_endpoint(comment_data: CommentCreate):
     Endpoint to create a comment on a YouTube video.
     """
     try:
-        result = youtube_service.create_comment(comment_data.video_id, comment_data.comment_text)
+        result = youtube_comments.create_comment(comment_data.video_id, comment_data.comment_text)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating comment: {str(e)}")
@@ -310,7 +248,7 @@ async def pin_comment_endpoint(pin_data: CommentPin):
     Endpoint to pin a comment to a YouTube video.
     """
     try:
-        result = youtube_service.pin_comment(pin_data.comment_id)
+        result = youtube_comments.pin_comment(pin_data.comment_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error pinning comment: {str(e)}")
@@ -321,7 +259,7 @@ async def create_and_pin_comment_endpoint(comment_data: CommentCreateAndPin):
     Endpoint to create a comment and immediately pin it to a YouTube video.
     """
     try:
-        result = youtube_service.create_and_pin_comment(comment_data.video_id, comment_data.comment_text)
+        result = youtube_comments.create_and_pin_comment(comment_data.video_id, comment_data.comment_text)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating and pinning comment: {str(e)}")
@@ -333,7 +271,7 @@ async def check_oauth_status():
     """
     try:
         # Try to get the OAuth service (this will check if credentials exist)
-        youtube_service.get_youtube_oauth_service()
+        youtube_comments.get_youtube_oauth_service()
         return {"status": "authenticated", "message": "YouTube OAuth is properly configured"}
     except Exception as e:
         return {"status": "not_authenticated", "message": str(e)}
@@ -344,6 +282,7 @@ async def check_oauth_status():
 async def analyze_multiple_channels(request: MultiChannelRequest):
     """
     Analyze multiple YouTube channels and get their latest videos from the specified time period.
+    Also performs outlier analysis to identify viral hits and underperforming videos.
     If no channel_urls provided, uses saved channels from the database.
     
     Body:
@@ -358,6 +297,10 @@ async def analyze_multiple_channels(request: MultiChannelRequest):
     - https://www.youtube.com/@username
     - https://www.youtube.com/user/username
     - https://www.youtube.com/c/channelname
+    
+    Returns:
+    - video_data: Raw video data from channels
+    - outlier_analysis: Outlier analysis comparing last 14 days against baseline
     """
     try:
         if request.days_back < 1 or request.days_back > 365:
@@ -366,8 +309,8 @@ async def analyze_multiple_channels(request: MultiChannelRequest):
         if request.max_videos_per_channel < 1 or request.max_videos_per_channel > 100:
             raise HTTPException(status_code=400, detail="max_videos_per_channel must be between 1 and 100")
         
-        # Process the channels
-        results = youtube_service.get_videos_from_multiple_channels(
+        # Get video data from channels
+        video_results = youtube_analytics.get_videos_from_multiple_channels(
             channel_urls=request.channel_urls,
             days_back=request.days_back,
             max_videos_per_channel=request.max_videos_per_channel,
@@ -375,7 +318,28 @@ async def analyze_multiple_channels(request: MultiChannelRequest):
             use_saved_channels=request.use_saved_channels
         )
         
-        return results
+        # Perform outlier analysis using the already-fetched video data
+        # This avoids double API calls and saves ~50% quota usage
+        outlier_results = youtube_analytics.analyze_video_outliers(
+            channel_urls=request.channel_urls,
+            use_saved_channels=request.use_saved_channels,
+            video_data=video_results  # Pass the already-fetched data
+        )
+        
+        # Combine results
+        combined_results = {
+            "video_data": video_results,
+            "outlier_analysis": outlier_results,
+            "analysis_metadata": {
+                "days_back_requested": request.days_back,
+                "max_videos_per_channel": request.max_videos_per_channel,
+                "save_channels": request.save_channels,
+                "use_saved_channels": request.use_saved_channels,
+                "outlier_analysis_period": "Last 14 days vs Days 15-28 baseline"
+            }
+        }
+        
+        return combined_results
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing channels: {str(e)}")
@@ -419,7 +383,7 @@ async def extract_channel_id(url: str = Query(..., description="YouTube channel 
     - https://www.youtube.com/c/channelname
     """
     try:
-        channel_id = youtube_service.extract_channel_id_from_url(url)
+        channel_id = youtube_analytics.extract_channel_id_from_url(url)
         
         if not channel_id:
             raise HTTPException(status_code=404, detail=f"Could not extract channel ID from URL: {url}")
@@ -436,12 +400,6 @@ async def extract_channel_id(url: str = Query(..., description="YouTube channel 
         raise HTTPException(status_code=500, detail=f"Error extracting channel ID: {str(e)}")
 
 # Saved Channel Management Endpoints
-
-class SavedChannelRequest(BaseModel):
-    channel_url: str
-    priority: int = 1
-    notes: Optional[str] = None
-    tags: Optional[List[str]] = None
 
 @router.get("/saved-channels")
 async def get_saved_channels(active_only: bool = True):
@@ -507,13 +465,13 @@ async def add_saved_channel(request: SavedChannelRequest):
         from services import database as db_service
         
         # Extract channel ID and get metadata
-        channel_id = youtube_service.extract_channel_id_from_url(request.channel_url)
+        channel_id = youtube_analytics.extract_channel_id_from_url(request.channel_url)
         
         if not channel_id:
             raise HTTPException(status_code=400, detail=f"Could not extract channel ID from URL: {request.channel_url}")
         
         # Get channel metadata
-        metadata = youtube_service.get_channel_metadata(channel_id)
+        metadata = youtube_analytics.get_channel_metadata(channel_id)
         
         if not metadata:
             raise HTTPException(status_code=404, detail=f"Channel not found: {channel_id}")
