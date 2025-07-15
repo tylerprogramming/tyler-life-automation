@@ -79,8 +79,6 @@ async def ai_schedule_content(schedule_request: AIScheduleRequest) -> List:
     # Get AI-generated calendar events with formatted data
     calendar_events_output = await calendar_agent_runner(formatted_content_data, all_preferences)
     
-    print(calendar_events_output)
-    
     # Extract calendar events from the output
     ai_generated_events = calendar_events_output.calendar_events
     
@@ -117,8 +115,6 @@ async def create_events_from_text(text: str):
     """
     try:
         calendar_events_output = await create_calendar_events_from_text_runner(text)
-        
-        print(calendar_events_output)
     
         # Extract calendar events from the output
         ai_generated_events = calendar_events_output.calendar_events
@@ -128,12 +124,9 @@ async def create_events_from_text(text: str):
         for event in ai_generated_events:
             # Strip timezone info from scheduled_time to avoid PostgreSQL timezone errors
             scheduled_time = event.scheduled_time
-            print(f"Original scheduled_time: {scheduled_time} (type: {type(scheduled_time)})")
             
             if hasattr(scheduled_time, 'tzinfo') and scheduled_time.tzinfo is not None:
-                print(f"Stripping timezone: {scheduled_time.tzinfo}")
                 scheduled_time = scheduled_time.replace(tzinfo=None)
-                print(f"After stripping: {scheduled_time} (type: {type(scheduled_time)})")
                 
             # Create CalendarEventCreate object from the AI output
             event_create = CalendarEventCreate(
@@ -146,8 +139,6 @@ async def create_events_from_text(text: str):
                 status=event.status,
                 notes=event.notes
             )
-            
-            print(f"About to save event: {event.title} at {scheduled_time}")
             
             # Save to database
             created_event = database_service.create_calendar_event(event_create)
