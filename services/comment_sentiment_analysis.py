@@ -22,7 +22,9 @@ from models.youtube_analytics import (
 from models.db_models import SentimentType as DBSentimentType
 from services import database as db_service
 
-# Import OpenAI as backup
+# OpenAI is the only provider. The Gemini path was removed: it called the
+# retired gemini-pro model through the deprecated google-generativeai SDK,
+# which requirements.txt never installed.
 try:
     from openai import OpenAI
     openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -30,46 +32,26 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
 
-# Import Gemini AI
-try:
-    import google.generativeai as genai
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
-
 class CommentSentimentAnalyzer:
     """
     Advanced AI-powered comment sentiment analyzer with comprehensive insights.
     """
     
-    def __init__(self, use_gemini: bool = True):
-        self.use_gemini = use_gemini and GEMINI_AVAILABLE
-        self.gemini_model = None
-        self.openai_client = None
-        
-        if self.use_gemini and GEMINI_AVAILABLE:
-            self.gemini_model = genai.GenerativeModel('gemini-pro')
-        elif OPENAI_AVAILABLE:
-            self.openai_client = openai_client
-            self.use_gemini = False
-        
-        self.model_name = "gemini-pro" if self.use_gemini else "gpt-5.4-mini"
+    def __init__(self):
+        self.openai_client = openai_client if OPENAI_AVAILABLE else None
+        self.model_name = "gpt-5.4-mini"
     
     def _ensure_ai_available(self):
         """Ensure AI service is available."""
-        if not self.use_gemini and not OPENAI_AVAILABLE:
-            raise Exception("No AI service available. Please install google-generativeai or openai package and set appropriate API keys.")
+        if not OPENAI_AVAILABLE:
+            raise Exception("No AI service available. Please install the openai package and set OPENAI_API_KEY.")
     
     def _generate_ai_response(self, prompt: str) -> str:
         """Generate AI response using available service."""
         self._ensure_ai_available()
         
         try:
-            if self.use_gemini and self.gemini_model:
-                response = self.gemini_model.generate_content(prompt)
-                return response.text
-            elif self.openai_client:
+            if self.openai_client:
                 # gpt-4 was shut down 2026-10-23. GPT-5 models take
                 # max_completion_tokens and only the default temperature.
                 response = self.openai_client.chat.completions.create(
