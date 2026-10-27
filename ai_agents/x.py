@@ -1,5 +1,6 @@
 import os
 from agents import Agent, Runner
+from ai_agents.model_config import REASONING_MODEL, REASONING_SETTINGS
 from models.twitter import TwitterOutput
 from models.ai_improve import TwitterImproved
 
@@ -13,14 +14,16 @@ with open(UPDATE_PROMPT_PATH, 'r', encoding='utf-8') as f:
 
 twitter_agent = Agent(
     name="Twitter Agent",
-    model="o3",
+    model=REASONING_MODEL,
+    model_settings=REASONING_SETTINGS,
     instructions=X_PROMPT,
     output_type=TwitterOutput,
 )
 
 twitter_update_agent = Agent(
     name="Twitter Update Agent",
-    model="o3",
+    model=REASONING_MODEL,
+    model_settings=REASONING_SETTINGS,
     instructions=X_UPDATE_PROMPT,
     output_type=TwitterOutput,
 )
