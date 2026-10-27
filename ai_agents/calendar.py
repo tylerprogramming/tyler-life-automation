@@ -1,5 +1,6 @@
 import os
 from agents import Agent, Runner
+from ai_agents.model_config import REASONING_MODEL, REASONING_SETTINGS
 from models.calendar import CalendarEventOutput
 from dotenv import load_dotenv
 
@@ -19,21 +20,24 @@ with open(CREATE_FROM_TEXT_PROMPT_PATH, 'r', encoding='utf-8') as f:
 
 calendar_agent = Agent(
     name="Calendar Agent",
-    model="o3",
+    model=REASONING_MODEL,
+    model_settings=REASONING_SETTINGS,
     instructions=CALENDAR_PROMPT,
     output_type=CalendarEventOutput,
 )
 
 # calendar_update_agent = Agent(
 #     name="Calendar Update Agent",
-#     model="o3",
+#     model=REASONING_MODEL,
+#     model_settings=REASONING_SETTINGS,
 #     instructions=CALENDAR_UPDATE_PROMPT,
 #     output_type=InstagramOutput,
 # )
 
 create_calendar_events_from_text = Agent(
     name="Calendar Agent Create From Text",
-    model="o3",
+    model=REASONING_MODEL,
+    model_settings=REASONING_SETTINGS,
     instructions=CALENDAR_PROMPT_CREATE_FROM_TEXT,
     output_type=CalendarEventOutput,
 )

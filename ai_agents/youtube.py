@@ -1,5 +1,6 @@
 import os
 from agents import Agent, Runner
+from ai_agents.model_config import REASONING_MODEL, REASONING_SETTINGS
 from models.youtube import YouTubeOutput
 from dotenv import load_dotenv
 
@@ -15,14 +16,16 @@ with open(UPDATE_PROMPT_PATH, 'r', encoding='utf-8') as f:
 
 youtube_description_agent = Agent(
     name="YouTube Agent",
-    model="o3",
+    model=REASONING_MODEL,
+    model_settings=REASONING_SETTINGS,
     instructions=YOUTUBE_PROMPT,
     output_type=YouTubeOutput,
 )
 
 youtube_update_agent = Agent(
     name="YouTube Update Agent",
-    model="o3",
+    model=REASONING_MODEL,
+    model_settings=REASONING_SETTINGS,
     instructions=YOUTUBE_UPDATE_PROMPT,
     output_type=YouTubeOutput,
 )
