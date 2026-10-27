@@ -19,3 +19,4 @@ moviepy
 firecrawl-py
 crewai
 crewai-tools
+cryptography

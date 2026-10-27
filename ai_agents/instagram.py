@@ -15,14 +15,14 @@ with open(UPDATE_PROMPT_PATH, 'r', encoding='utf-8') as f:
 
 instagram_agent = Agent(
     name="Instagram Agent",
-    model="o3-mini",
+    model="gpt-5.4-mini",  # o3-mini was shut down 2026-10-23
     instructions=INSTAGRAM_PROMPT,
     output_type=InstagramOutput,
 )
 
 instagram_update_agent = Agent(
     name="Instagram Update Agent",
-    model="o3-mini",
+    model="gpt-5.4-mini",  # o3-mini was shut down 2026-10-23
     instructions=INSTAGRAM_UPDATE_PROMPT,
     output_type=InstagramOutput,
 )
