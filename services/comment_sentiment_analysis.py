@@ -54,7 +54,7 @@ class CommentSentimentAnalyzer:
             self.openai_client = openai_client
             self.use_gemini = False
         
-        self.model_name = "gemini-pro" if self.use_gemini else "gpt-4"
+        self.model_name = "gemini-pro" if self.use_gemini else "gpt-5.4-mini"
     
     def _ensure_ai_available(self):
         """Ensure AI service is available."""
@@ -70,11 +70,12 @@ class CommentSentimentAnalyzer:
                 response = self.gemini_model.generate_content(prompt)
                 return response.text
             elif self.openai_client:
+                # gpt-4 was shut down 2026-10-23. GPT-5 models take
+                # max_completion_tokens and only the default temperature.
                 response = self.openai_client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-5.4-mini",
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=3000,
-                    temperature=0.3
+                    max_completion_tokens=3000,
                 )
                 return response.choices[0].message.content
             else:
