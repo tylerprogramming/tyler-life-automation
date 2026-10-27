@@ -18,7 +18,7 @@ from models.ai_improve import (
 load_dotenv()
 
 o3_llm = LLM(
-    model="o3",
+    model="gpt-5.6-sol",  # o3 shuts down 2026-12-11; this LLM is not used by any agent yet
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
