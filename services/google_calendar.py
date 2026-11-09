@@ -17,14 +17,41 @@ load_dotenv()
 # If modifying these scopes, delete the token file.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
+# Calendar keeps its own token. credentials/token.json is also where the YouTube
+# comments service saves its youtube.readonly token, and a token cannot be
+# refreshed for a scope it was never granted.
+CALENDAR_TOKEN_FILE = 'credentials/calendar_token.json'
+# Older locations: root token.json (written by simple_auth.py) and
+# credentials/token.json (read by earlier versions of this module). They are used
+# only if their saved scopes include the calendar scope. The next save writes
+# CALENDAR_TOKEN_FILE.
+LEGACY_TOKEN_FILES = ['token.json', 'credentials/token.json']
+
+
+def _has_calendar_scope(token_path):
+    try:
+        with open(token_path) as f:
+            saved = json.load(f).get('scopes') or []
+    except (OSError, ValueError):
+        return False
+    if isinstance(saved, str):
+        saved = saved.split()
+    return all(scope in saved for scope in SCOPES)
+
+
 def get_google_calendar_service():
     """
     Get authenticated Google Calendar service.
     """
     creds = None
-    # The file token.json stores the user's access and refresh tokens.
-    if os.path.exists('credentials/token.json'):
-        creds = Credentials.from_authorized_user_file('credentials/token.json', SCOPES)
+    # The token file stores the user's access and refresh tokens.
+    if os.path.exists(CALENDAR_TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(CALENDAR_TOKEN_FILE, SCOPES)
+    else:
+        for token_path in LEGACY_TOKEN_FILES:
+            if os.path.exists(token_path) and _has_calendar_scope(token_path):
+                creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+                break
     
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
@@ -43,8 +70,9 @@ def get_google_calendar_service():
             else:
                 raise Exception("No Google Calendar credentials found. Please add credentials.json file.")
         
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        # Save the credentials for the next run, where the next run reads them
+        os.makedirs(os.path.dirname(CALENDAR_TOKEN_FILE), exist_ok=True)
+        with open(CALENDAR_TOKEN_FILE, 'w') as token:
             token.write(creds.to_json())
 
     service = build('calendar', 'v3', credentials=creds)
