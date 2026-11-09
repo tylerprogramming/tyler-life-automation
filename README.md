@@ -86,7 +86,7 @@ OAuth files are gitignored (`credentials.json`, `credentials/`, `youtube_credent
 
 - YouTube comments (`services/youtube_comments.py`): `credentials/client_secrets.json`, with the token written to `credentials/token.json`.
 - `setup_youtube_oauth.py` uses `youtube_credentials/client_secrets.json` and `youtube_credentials/token.json`. Its paths differ from `services/youtube_comments.py`, so copy the token across after running it.
-- Google Calendar (`services/google_calendar.py`): `credentials/credentials.json` (or `credentials.json` in the root). It reads the token from `credentials/token.json` but writes a refreshed one to `token.json` in the root, so move it into `credentials/` after the first login.
+- Google Calendar (`services/google_calendar.py`): `credentials/credentials.json` (or `credentials.json` in the root), with the token saved to `credentials/calendar_token.json`. It keeps its own token file because `credentials/token.json` holds the YouTube token, which has a different scope. A calendar token that `simple_auth.py` saved to `token.json` in the root is picked up on the first run.
 
 Run the OAuth helpers on your host. They open a browser.
 

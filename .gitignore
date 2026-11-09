@@ -9,6 +9,7 @@ test*
 reset*
 clear*
 credentials.json
+token.json
 credentials/
 youtube_credentials/
 fix_encryption_key.py
